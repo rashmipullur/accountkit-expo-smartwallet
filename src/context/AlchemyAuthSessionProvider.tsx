@@ -1,4 +1,4 @@
-import { alchemy, sepolia } from "@account-kit/infra";
+import { alchemy, base, baseSepolia, sepolia } from "@account-kit/infra";
 import { QueryClient } from "@tanstack/react-query";
 import {
 	AlchemyAccountProvider,
@@ -14,7 +14,7 @@ export const AlchemyAuthSessionProvider = ({
 	children: React.ReactNode;
 }) => {
 	const config = createConfig({
-		chain: sepolia,
+		chain: base,
 		transport: alchemy({
 			apiKey: Constants.expoConfig?.extra?.EXPO_PUBLIC_ALCHEMY_API_KEY!,
 		}),
