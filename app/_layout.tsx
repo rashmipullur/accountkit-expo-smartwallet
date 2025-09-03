@@ -11,7 +11,6 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { AlchemyAuthSessionProvider } from "@src/context/AlchemyAuthSessionProvider";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { Platform } from "react-native";
 
 export { ErrorBoundary } from "expo-router";
 
@@ -22,7 +21,6 @@ export const unstable_settings = {
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-	// Feel free to load and use whatever fonts of your choosing.
 	const [loaded, error] = useFonts({
 		SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
 		...FontAwesome.font,
@@ -54,19 +52,11 @@ function RootLayoutNav() {
 						headerShown: false,
 					}}
 				>
-					<Stack.Screen
-						name="otp-modal"
-						options={{
-							presentation:
-								Platform.OS === "ios"
-									? "formSheet"
-									: "containedTransparentModal",
-							animation:
-								Platform.OS === "android"
-									? "slide_from_bottom"
-									: "default",
-						}}
-					/>
+					{/* Authentication Flow */}
+					<Stack.Screen name="(auth)" />
+					
+					{/* Main App Flow */}
+					<Stack.Screen name="(main)" />
 				</Stack>
 			</SafeAreaProvider>
 		</AlchemyAuthSessionProvider>

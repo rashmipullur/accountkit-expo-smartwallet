@@ -18,7 +18,7 @@ export default function MainLayout() {
 	}
 
 	if (status === AlchemySignerStatus.DISCONNECTED) {
-		return <Redirect href={"/sign-in"} />;
+		return <Redirect href="/(auth)/sign-in" />;
 	}
 
 	return (
@@ -33,8 +33,7 @@ export default function MainLayout() {
 								style={{
 									marginLeft: "auto",
 								}}
-								// Workaround on Android: https://github.com/expo/expo/issues/33093#issuecomment-2587684514
-								onPressIn={() => router.navigate("/menu")}
+								onPressIn={() => router.navigate("/(main)/menu")}
 							>
 								{({ pressed }) => (
 									<Feather
@@ -84,6 +83,15 @@ export default function MainLayout() {
 					headerShown: false,
 				}}
 			/>
+			
+			{/* Wallet Features */}
+			<Stack.Screen name="pay" options={{ headerShown: false }} />
+			<Stack.Screen name="history" options={{ headerShown: false }} />
+			<Stack.Screen name="profile" options={{ headerShown: false }} />
+			<Stack.Screen name="scan-qr" options={{ headerShown: false }} />
+			<Stack.Screen name="share-qr" options={{ headerShown: false }} />
+			<Stack.Screen name="search-people" options={{ headerShown: false }} />
+			<Stack.Screen name="success-tx" options={{ headerShown: false }} />
 		</Stack>
 	);
 }
@@ -115,9 +123,78 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 		marginLeft: "auto",
-
 		borderRadius: 10,
 		borderWidth: StyleSheet.hairlineWidth,
 		borderColor: "rgba(10, 10, 10, 0.5)",
 	},
 });
+
+// import { AppLoadingIndicator } from "@/src/components/app-loading";
+// import AnimationScreen from "@/src/components/start_animated_screen/AnimatedScreen";
+// import { useSignerStatus } from "@account-kit/react-native";
+// import { AlchemySignerStatus } from "@account-kit/signer";
+// import { Redirect, Stack } from "expo-router";
+
+// export default function TabsLayout() {
+// 	const { status, isAuthenticating } = useSignerStatus();
+
+// 		if (isAuthenticating) {
+// 		return <AppLoadingIndicator />;
+// 	}
+// 		if (status === AlchemySignerStatus.DISCONNECTED) {
+// 		return <Redirect href="/(auth)/sign-in" />;
+// 	}
+
+//   return (
+//     <AnimationScreen>
+//       {/* <Stack>
+//         <Stack.Screen
+//           name="index"
+//           options={{ title: "Home", headerShown: false }}
+//         />
+//         <Stack.Screen
+//           name="login"
+//           options={{ title: "Login", headerShown: false }}
+//         />
+//         <Stack.Screen
+//           name="signup"
+//           options={{ title: "Signup", headerShown: false }}
+//         />
+//         <Stack.Screen
+//           name="forgot_password"
+//           options={{ title: "forgot_password", headerShown: false }}
+//         />
+//         <Stack.Screen
+//           name="history"
+//           options={{ title: "history", headerShown: false }}
+//         />
+//         <Stack.Screen
+//           name="otp_verification"
+//           options={{ title: "otp_verification", headerShown: false }}
+//         />
+//         <Stack.Screen
+//           name="pay"
+//           options={{ title: "pay", headerShown: false }}
+//         />
+//         <Stack.Screen
+//           name="scan_qr"
+//           options={{ title: "scan_qr", headerShown: false }}
+//         />
+//         <Stack.Screen
+//           name="search_people"
+//           options={{ title: "search_people", headerShown: false }}
+//         />
+//         <Stack.Screen
+//           name="share_qr"
+//           options={{ title: "share_qr", headerShown: false }}
+//         />
+//         <Stack.Screen
+//           name="success_tx"
+//           options={{ title: "success_tx", headerShown: false }}
+//         />
+//       </Stack> */}
+	  
+//       <Stack screenOptions={{ headerShown: false }} />
+//     </AnimationScreen>
+//   );
+// }

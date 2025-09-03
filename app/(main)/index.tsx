@@ -3,10 +3,11 @@ import { StyleSheet, View, Text, Linking, ScrollView, TouchableOpacity, Alert, R
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useState, useEffect } from "react";
 import { encodeFunctionData, formatEther, parseAbi } from "viem";
+import WalletHomePage from "@/src/components/home/HomePage";
 
 export default function TabOneScreen() {
   const user = useUser();
-  console.log("User info:", user);
+  // console.log("User info:", user);
 
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -235,8 +236,6 @@ export default function TabOneScreen() {
     );
   };
 
-
-
   // Add this debug function to your component to troubleshoot the USDC balance issue
 
 const debugBalances = async () => {
@@ -355,6 +354,7 @@ const transferUSDCToSmartAccount = async () => {
         <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
       }
     >
+      <WalletHomePage />
       <View style={styles.container}>
         <Text style={[styles.userText, { fontSize: 50 }]}>
           Welcome!
@@ -510,6 +510,14 @@ const transferUSDCToSmartAccount = async () => {
             https://accountkit.alchemy.com/react-native/using-smart-accounts/send-user-operations
           </Text>
         </View>
+        <TouchableOpacity 
+            style={[styles.button, styles.infoButton]} 
+            onPress={checkDetailedBalance}
+          >
+            <Text style={[styles.buttonText, { color: '#333' }]}>
+             log out
+            </Text>
+          </TouchableOpacity>
       </View>
     </ScrollView>
   );
