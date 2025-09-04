@@ -1,148 +1,309 @@
-import { useCallback, useState } from "react";
+import { AntDesign } from "@expo/vector-icons";
+import { Stack, router, useLocalSearchParams } from "expo-router";
+import { useEffect, useRef, useState } from "react";
 import {
-    TextInput,
-    StyleSheet,
-    View,
-    Text,
-    Pressable,
-    Dimensions,
-    Alert,
+  ActivityIndicator,
+  Alert,
+  Keyboard,
+  NativeSyntheticEvent,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TextInputKeyPressEventData,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { MaterialIcons } from "@expo/vector-icons";
-import { Redirect, useRouter } from "expo-router";
-import { useAuthenticate, useSignerStatus } from "@account-kit/react-native";
-import WalletHomePage from "@/src/components/home/HomePage";
+import { useAuthenticate } from "@account-kit/react-native";
 
-const windowHeight = Dimensions.get("window").height;
+export default function OTPScreen() {
+  const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
+  const [errorMessage, setErrorMessage] = useState<string>("");
+  const [resendTimer, setResendTimer] = useState<number>(60);
+  const [isResending, setIsResending] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-export default function ModalScreen() {
-    const [otpCode, setOtpCode] = useState<string>("");
-    const { authenticate } = useAuthenticate();
-    const { isConnected } = useSignerStatus();
-    const router = useRouter();
+  const { email } = useLocalSearchParams<{ email: string }>();
+  const { authenticate, authenticateAsync } = useAuthenticate();
 
-    const handleUserOtp = useCallback(() => {
-        try {
-            authenticate({
-                otpCode,
-                type: "otp",
-            });
+  const inputRefs = useRef<Array<TextInput | null>>([]);
 
-            router.replace("/");
-        } catch (e) {
-            Alert.alert("Error sending OTP Code. Check logs for more details.");
+  useEffect(() => {
+    let timer: number | undefined;
+    if (isResending && resendTimer > 0) {
+      timer = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
+      }, 1000) as unknown as number;
+    } else if (resendTimer === 0) {
+      setIsResending(false);
+    }
+    return () => {
+      if (timer) {
+        clearInterval(timer);
+      }
+    };
+  }, [isResending, resendTimer]);
 
-            console.log("Error seding OTP CODE: ", e);
-        }
-    }, [otpCode]);
+  const handleOtpChange = (text: string, index: number) => {
+    const newOtp = [...otp];
+    newOtp[index] = text;
+    setOtp(newOtp);
 
-    if (isConnected) {
-        return <WalletHomePage />;
+    if (text && index < otp.length - 1) {
+      inputRefs.current[index + 1]?.focus();
+    }
+    if (text && index === otp.length - 1) {
+      Keyboard.dismiss();
+    }
+  };
+
+  const handleBackspace = (index: number) => {
+    const newOtp = [...otp];
+    if (newOtp[index] === "" && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+    newOtp[index] = "";
+    setOtp(newOtp);
+  };
+
+  const handleVerifyOtp = async () => {
+    setErrorMessage("");
+    setIsLoading(true);
+    const fullOtp = otp.join("");
+
+    if (fullOtp.length !== 6 || !/^\d+$/.test(fullOtp)) {
+      setErrorMessage("Please enter a valid 6-digit OTP.");
+      setIsLoading(false);
+      return;
     }
 
-    return (
-        <View style={styles.formContainer}>
-            {/* Close Button */}
-            <Pressable onPress={() => router.back()}>
-                {({ pressed }) => (
-                    <View
-                        style={[
-                            styles.closeButtonWrapper,
-                            { opacity: pressed ? 0.5 : 1 },
-                        ]}
-                    >
-                        <MaterialIcons name="close" size={24} color={"red"} />
-                    </View>
-                )}
-            </Pressable>
+    try {
+      authenticate({
+        otpCode: fullOtp,
+        type: "otp",
+      });
 
-            <Text
-                style={[styles.titleText, { fontSize: 18, marginBottom: 5 }]}
-            >{`Awesome! `}</Text>
-            <Text
-                style={styles.titleText}
-            >{`We have sent a One-Time Password to your email address. Enter it below to \nsign-in!.`}</Text>
-            <View style={styles.textInputContainer}>
-                <TextInput
-                    style={styles.textInput}
-                    value={otpCode}
-                    onChangeText={(val) => setOtpCode(val.toLowerCase())}
-                    placeholder="123456"
-                />
-                <Pressable onPress={handleUserOtp}>
-                    {({ pressed }) => (
-                        <View
-                            style={[
-                                styles.signInButton,
-                                {
-                                    opacity: pressed ? 0.5 : 1,
-                                    transform: [
-                                        {
-                                            scale: pressed ? 0.98 : 1,
-                                        },
-                                    ],
-                                },
-                            ]}
-                        >
-                            <Text style={[styles.signInText]}>Verify OTP</Text>
-                        </View>
-                    )}
-                </Pressable>
-            </View>
+      router.replace("/");
+    } catch (error) {
+      console.error("OTP verification failed:", error);
+      setErrorMessage("Invalid OTP. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (!email) {
+      setErrorMessage("Email not found. Please go back and try again.");
+      return;
+    }
+
+    setErrorMessage("");
+    setIsResending(true);
+    setResendTimer(60);
+
+    try {
+      authenticateAsync({
+        type: "email",
+        email,
+        emailMode: "otp",
+      });
+
+      // console.log("OTP resent successfully to", email);
+      // Alert.alert("Success", "OTP has been resent to your email address.");
+    } catch (error) {
+      console.error("Failed to resend OTP:", error);
+      setErrorMessage("Failed to resend OTP. Please try again.");
+      setIsResending(false);
+      setResendTimer(0);
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <Stack.Screen options={{ headerShown: false }} />
+
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <AntDesign name="arrowleft" size={24} color="black" />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.content}>
+        <Text style={styles.title}>Verify your account</Text>
+        <Text style={styles.subtitle}>
+          We have sent a 6-digit OTP to {email ? `${email}` : 'your email address'}. 
+          Please enter it below.
+        </Text>
+
+        {/* OTP Input Fields */}
+        <View style={styles.otpInputContainer}>
+          {otp.map((digit, index) => (
+            <TextInput
+              key={index}
+              style={styles.otpInput}
+              keyboardType="numeric"
+              maxLength={1}
+              onChangeText={(text) => handleOtpChange(text, index)}
+              onKeyPress={({
+                nativeEvent,
+              }: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
+                if (nativeEvent.key === "Backspace") {
+                  handleBackspace(index);
+                }
+              }}
+              value={digit}
+              ref={(ref: TextInput | null) => {
+                inputRefs.current[index] = ref;
+              }}
+              autoFocus={index === 0}
+            />
+          ))}
         </View>
-    );
+
+        {/* Error Message Display */}
+        {errorMessage ? (
+          <Text style={styles.errorMessage}>{errorMessage}</Text>
+        ) : null}
+
+        {/* Verify Button */}
+        <TouchableOpacity
+          style={styles.verifyButton}
+          onPress={handleVerifyOtp}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.verifyButtonText}>Verify</Text>
+          )}
+        </TouchableOpacity>
+
+        {/* Resend OTP */}
+        <View style={styles.resendContainer}>
+          <Text style={styles.resendText}>Didn't receive the OTP? </Text>
+          <TouchableOpacity onPress={handleResendOtp} disabled={isResending}>
+            <Text
+              style={[
+                styles.resendLink,
+                isResending && styles.resendLinkDisabled,
+              ]}
+            >
+              Resend OTP {isResending ? `(${resendTimer}s)` : ""}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </SafeAreaView>
+  );
 }
+
 const styles = StyleSheet.create({
-    formContainer: {
-        backgroundColor: "white",
-        flex: 1,
-        height: windowHeight,
-        paddingHorizontal: 20,
-        paddingVertical: 30,
-    },
-
-    titleText: {
-        fontFamily: "SpaceMono",
-    },
-    textInputContainer: {
-        marginTop: 10,
-        width: "100%",
-    },
-
-    closeButtonWrapper: {
-        padding: 5,
-        justifyContent: "center",
-        alignItems: "center",
-        borderWidth: 1,
-        borderColor: "red",
-        borderRadius: 10,
-        width: 40,
-        height: 40,
-        marginBottom: 30,
-    },
-
-    textInput: {
-        width: "100%",
-        height: 40,
-        borderColor: "rgba(0,0,0,0.095)",
-        borderWidth: 1,
-        paddingHorizontal: 10,
-        backgroundColor: "rgba(0,0,0,0.025)",
-        marginBottom: 10,
-        borderRadius: 10,
-    },
-
-    signInButton: {
-        width: "100%",
-        padding: 15,
-        borderRadius: 10,
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "rgb(0, 0, 0)",
-    },
-
-    signInText: {
-        color: "white",
-        fontFamily: "SpaceMono",
-    },
+  container: {
+    flex: 1,
+    backgroundColor: "#fff",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  header: {
+    width: "100%",
+    alignItems: "flex-start",
+    position: "absolute",
+    top: 0,
+    left: 0,
+    paddingTop: 50,
+    paddingLeft: 20,
+  },
+  backButton: {
+    padding: 5,
+  },
+  content: {
+    width: "100%",
+    maxWidth: 400,
+    alignItems: "center",
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#000",
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  subtitle: {
+    fontSize: 16,
+    color: "#555",
+    marginBottom: 40,
+    textAlign: "center",
+  },
+  otpInputContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+    maxWidth: 300,
+    marginBottom: 20,
+  },
+  otpInput: {
+    width: 45,
+    height: 55,
+    borderRadius: 15,
+    backgroundColor: "#f0f0f0",
+    textAlign: "center",
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#000",
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  errorMessage: {
+    color: "red",
+    fontSize: 14,
+    textAlign: "center",
+    marginBottom: 15,
+    marginHorizontal: 20,
+  },
+  verifyButton: {
+    backgroundColor: "#34C759",
+    borderRadius: 15,
+    paddingVertical: 15,
+    width: "100%",
+    alignItems: "center",
+    marginTop: 20,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  verifyButtonText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  resendContainer: {
+    flexDirection: "row",
+    marginTop: "auto",
+    alignItems: "center",
+  },
+  resendText: {
+    color: "#555",
+    fontSize: 14,
+  },
+  resendLink: {
+    color: "#34C759",
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+  resendLinkDisabled: {
+    color: "#888",
+  },
 });

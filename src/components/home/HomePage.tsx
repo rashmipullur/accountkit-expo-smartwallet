@@ -118,7 +118,7 @@ export default function WalletHomePage() {
       <View style={styles.searchHeader}>
         <TouchableOpacity
           style={styles.searchBar}
-        //   onPress={() => router.push("/search_people")}
+          onPress={() => router.push("/search_people")}
         >
           <MaterialCommunityIcons name="magnify" size={24} color="#999" />
           <Text style={styles.searchPlaceholder}>
@@ -169,7 +169,7 @@ export default function WalletHomePage() {
         <View style={styles.actionItemContainer}>
           <TouchableOpacity
             style={styles.actionIconButton}
-            // onPress={() => router.push("/search_people")}
+            onPress={() => router.push("/search_people")}
           >
             <MaterialCommunityIcons
               name="currency-usd"

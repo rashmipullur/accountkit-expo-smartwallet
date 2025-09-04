@@ -24,7 +24,6 @@ export default function SignIn() {
         setErrorMessage("");
         setIsLoading(true);
 
-        // Basic Email Validation
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
             setErrorMessage("Please enter a valid email address.");
@@ -33,16 +32,18 @@ export default function SignIn() {
         }
 
         try {
-            // Start the authentication process
            authenticateAsync({
                 type: "email",
                 email,
                 emailMode: "otp",
             });
 
-            console.log("OTP sent successfully, navigating to OTP modal");
+            // console.log("OTP sent successfully, navigating to OTP modal");
             
-            router.navigate("/otp-verification");
+            router.navigate({
+                pathname: "/otp-verification",
+                params: { email }
+            });
             
         } catch (e) {
             console.error(

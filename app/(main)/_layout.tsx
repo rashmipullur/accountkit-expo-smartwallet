@@ -22,77 +22,8 @@ export default function MainLayout() {
 	}
 
 	return (
-		<Stack>
-			<Stack.Screen
-				name="index"
-				options={{
-					title: "Welcome!",
-					header: () => (
-						<View style={[styles.header, { paddingTop: top + 10 }]}>
-							<Pressable
-								style={{
-									marginLeft: "auto",
-								}}
-								onPressIn={() => router.navigate("/(main)/menu")}
-							>
-								{({ pressed }) => (
-									<Feather
-										name="menu"
-										size={25}
-										style={{
-											marginRight: 15,
-											opacity: pressed ? 0.5 : 1,
-										}}
-									/>
-								)}
-							</Pressable>
-						</View>
-					),
-				}}
-			/>
-			<Stack.Screen
-				name="menu"
-				options={{
-					header: () => (
-						<View style={styles.menuHeaderContainer}>
-							<Pressable
-								style={styles.closeButtonWrapper}
-								onPressIn={() => router.dismiss()}
-							>
-								<Feather
-									name="x"
-									size={22}
-									color={"rgba(10, 10, 10, 0.75)"}
-								/>
-							</Pressable>
-						</View>
-					),
-					presentation:
-						Platform.OS === "ios"
-							? "formSheet"
-							: "containedTransparentModal",
-					animation:
-						Platform.OS === "android"
-							? "slide_from_bottom"
-							: "default",
-				}}
-			/>
-			<Stack.Screen
-				name="oauth-callback"
-				options={{
-					headerShown: false,
-				}}
-			/>
-			
-			{/* Wallet Features */}
-			<Stack.Screen name="pay" options={{ headerShown: false }} />
-			<Stack.Screen name="history" options={{ headerShown: false }} />
-			<Stack.Screen name="profile" options={{ headerShown: false }} />
-			<Stack.Screen name="scan-qr" options={{ headerShown: false }} />
-			<Stack.Screen name="share-qr" options={{ headerShown: false }} />
-			<Stack.Screen name="search-people" options={{ headerShown: false }} />
-			<Stack.Screen name="success-tx" options={{ headerShown: false }} />
-		</Stack>
+		 <Stack screenOptions={{ headerShown: false }} />
+		 
 	);
 }
 
