@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import {
+  Image,
   ImageBackground,
   StyleSheet,
   Text,
@@ -138,7 +139,20 @@ export default function WalletHomePage() {
         imageStyle={styles.cardImageBackground}
       >
         <View style={styles.cardContentAbsolute}>
-          <Text style={styles.balanceCurrency}>$</Text>
+          {/* <Text style={styles.balanceCurrency}>$</Text> */}
+          <Image 
+  source={require("../../../assets/images/token/usdc.png")} 
+  style={styles.usdcIcon} 
+/>
+{/* <Text style={styles.usdcText}>USDC</Text> */}
+
+{/* <View style={styles.currencyContainer}>
+  <Image 
+    source={require("../../../assets/images/token/usdc.png")} 
+    style={styles.smallUsdcIcon} 
+  />
+  <Text style={styles.currencyLabel}>USDC</Text>
+</View> */}
           <Text style={styles.balanceAmount}>
             3,753<Text style={styles.balanceDecimal}>.35</Text>
           </Text>
@@ -163,10 +177,10 @@ export default function WalletHomePage() {
               color="white"
             />
           </TouchableOpacity>
-          <Text style={styles.actionText}>Scan any{"\n"}QR code</Text>
+          <Text style={styles.actionText}>Scan and Pay</Text>
         </View>
 
-        <View style={styles.actionItemContainer}>
+        {/* <View style={styles.actionItemContainer}>
           <TouchableOpacity
             style={styles.actionIconButton}
             onPress={() => router.push("/search_people")}
@@ -178,13 +192,13 @@ export default function WalletHomePage() {
             />
           </TouchableOpacity>
           <Text style={styles.actionText}>Pay{"\n"}anyone</Text>
-        </View>
+        </View> */}
 
         <View style={styles.actionItemContainer}>
           <TouchableOpacity style={styles.actionIconButton}>
             <MaterialCommunityIcons name="bank" size={32} color="white" />
           </TouchableOpacity>
-          <Text style={styles.actionText}>Bank{"\n"}withdraw</Text>
+          <Text style={styles.actionText}>Stake</Text>
         </View>
 
         <View style={styles.actionItemContainer}>
@@ -206,7 +220,7 @@ export default function WalletHomePage() {
       />
       {/* buisness and merchent */}
       <ProfileIconSection
-        title="Buisness"
+        title="Businesses"
         people={dummyPeople}
         initialVisibleCount={7} // Show only 4 initially
       />
@@ -219,6 +233,43 @@ export default function WalletHomePage() {
 }
 
 const styles = StyleSheet.create({
+  currencyContainer: {
+  flexDirection: "column",
+  alignItems: "center",
+  marginRight: 10,
+},
+smallUsdcIcon: {
+  width: 20,
+  height: 20,
+  marginBottom: 2,
+},
+currencyLabel: {
+  fontSize: 12,
+  fontWeight: "600",
+  color: "white",
+},
+
+//   usdcIcon: {
+//   width: 32,
+//   height: 32,
+//   marginRight: 5,
+// },
+usdcIcon: {
+  // width: 28,
+  // height: 28,
+  // marginRight: 8,
+   width: 24,
+  height: 24,
+  marginRight: 6,
+  // tintColor: "white", // This will make the icon white to match your theme
+},
+usdcText: {
+  fontSize: 24,
+  fontWeight: "bold",
+  color: "white",
+  marginRight: 8,
+},
+
   container: {
     flex: 1,
     backgroundColor: "#fff",

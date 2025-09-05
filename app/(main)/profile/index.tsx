@@ -1,4 +1,4 @@
-import { useLogout } from "@account-kit/react-native";
+import { useLogout, useUser } from "@account-kit/react-native";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Feather from "@expo/vector-icons/Feather";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
@@ -19,6 +19,11 @@ import {
 
 export default function ProfileScreen() {
   const userName = "Jhone Doe";
+  const user = useUser()
+  console.log("-------------------------------")
+  console.log("User info:", user);
+  console.log("User address:", user?.address);
+  console.log("-------------------------------")
 
   const { logout } = useLogout();
 
@@ -42,7 +47,7 @@ export default function ProfileScreen() {
           <View style={styles.headerContent}>
             <View>
               <Text style={styles.name}>{userName}</Text>
-              <Text style={styles.subText}>UPI ID: example-5@okicici</Text>
+              <Text style={styles.subText}>Email ID: {user?.email}</Text>
             </View>
             <TouchableOpacity
               style={styles.avatarContainer}

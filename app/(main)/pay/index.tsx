@@ -13,73 +13,137 @@ import {
 
 export default function PaymentScreen() {
   const [amount, setAmount] = useState("");
+  const [message, setMessage] = useState("Here's the money I owe you.");
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
+
   async function payHandler() {
     try {
       setIsLoading(true);
-      if (Number(amount) <= 0) {
-        setErrorMessage("Invalid amount.");
+      setErrorMessage("");
+
+      const numericAmount = parseFloat(amount);
+      
+      if (!amount || numericAmount <= 0) {
+        setErrorMessage("Please enter a valid amount.");
         setIsLoading(false);
         return;
       }
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      router.replace("/success_tx");
+
+      if (numericAmount > 10000) {
+        setErrorMessage("Amount too large. Maximum is $10,000.");
+        setIsLoading(false);
+        return;
+      }
+
+      router.navigate({
+        pathname: "/payment-confirmation",
+        params: {
+          amount: amount,
+          recipient: "Lance Whitney",
+          message: message
+        }
+      });
+      
       setIsLoading(false);
     } catch (error) {
       console.log("🚀 ~ payHandler ~ error:", error);
+      setErrorMessage("Something went wrong. Please try again.");
       setIsLoading(false);
     }
   }
+
   return (
     <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
-      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-        <AntDesign name="arrowleft" size={28} color="black" />
-      </TouchableOpacity>
+      
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <AntDesign name="arrowleft" size={28} color="black" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Send Payment</Text>
+        <View style={styles.placeholder} />
+      </View>
 
-      {/* Avatar + Name */}
-      <View style={styles.userInfo}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>L</Text>
+      <View style={styles.content}>
+        {/* Avatar + Name */}
+        <View style={styles.userInfo}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>LW</Text>
+          </View>
+          <Text style={styles.name}>Paying Lance Whitney</Text>
+          <Text style={styles.address}>0xF62177...667ACA</Text>
         </View>
-        <Text style={styles.name}>Paying Lance Whitney</Text>
+
+        {/* Amount Input */}
+        <View style={styles.amountSection}>
+          <Text style={styles.sectionLabel}>Amount</Text>
+          <View style={styles.amountInputContainer}>
+            <Text style={styles.dollar}>$</Text>
+            <TextInput
+              style={styles.amountInput}
+              placeholder="0.00"
+              placeholderTextColor="#ccc"
+              keyboardType="numeric"
+              value={amount}
+              onChangeText={setAmount}
+            />
+            <Text style={styles.currency}>USDC</Text>
+          </View>
+        </View>
+
+        <View style={styles.messageSection}>
+          <Text style={styles.sectionLabel}>Message (Optional)</Text>
+          <TextInput
+            style={styles.messageInput}
+            placeholder="Add a note..."
+            placeholderTextColor="#888"
+            value={message}
+            onChangeText={setMessage}
+            multiline={true}
+            maxLength={100}
+          />
+        </View>
+
+        {errorMessage ? (
+          <View style={styles.errorContainer}>
+            <AntDesign name="exclamationcircleo" size={16} color="#ff4444" />
+            <Text style={styles.errorMessage}>{errorMessage}</Text>
+          </View>
+        ) : null}
+
+        <View style={styles.infoContainer}>
+          <AntDesign name="infocirlceo" size={16} color="#34C759" />
+          <Text style={styles.infoText}>
+            Payment will be sent using USDC on Base network
+          </Text>
+        </View>
       </View>
 
-      {/* Amount Input */}
-      <View style={styles.amountInputContainer}>
-        <Text style={styles.dollar}>$</Text>
-        <TextInput
-          style={styles.amountInput}
-          placeholder="0.00"
-          placeholderTextColor="#888" // Darker placeholder for light background
-          keyboardType="numeric"
-          value={amount}
-          onChangeText={setAmount}
-        />
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity
+          style={[
+            styles.payButton,
+            { 
+              opacity: (isLoading || !amount || parseFloat(amount) <= 0) ? 0.5 : 1,
+              backgroundColor: (amount && parseFloat(amount) > 0) ? "#34C759" : "#ccc"
+            }
+          ]}
+          onPress={payHandler}
+          disabled={isLoading || !amount || parseFloat(amount) <= 0}
+        >
+          {isLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator color="#fff" size="small" />
+              <Text style={styles.payButtonText}>Processing...</Text>
+            </View>
+          ) : (
+            <Text style={styles.payButtonText}>
+              Continue • ${amount || "0.00"}
+            </Text>
+          )}
+        </TouchableOpacity>
       </View>
-      {/* Error Message Display */}
-      {errorMessage ? (
-        <Text style={styles.errorMessage}>{errorMessage}</Text>
-      ) : null}
-
-      {/* Message */}
-      <View style={styles.messageBox}>
-        <Text style={styles.messageText}>Here&apos;s the money I owe you.</Text>
-      </View>
-
-      {/* Pay Button */}
-      <TouchableOpacity
-        style={styles.payButton}
-        onPress={() => payHandler()}
-        disabled={isLoading}
-      >
-        {isLoading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.payButtonText}>Pay ${amount || "0.00"}</Text>
-        )}
-      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -88,90 +152,170 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
-    padding: 20,
   },
   header: {
-    alignItems: "flex-start",
-    marginTop: 30,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingTop: 50,
+    paddingBottom: 20,
+    backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  closeButton: {
+  backButton: {
     padding: 5,
   },
-  close: {
-    fontSize: 22,
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "600",
     color: "#000",
   },
+  placeholder: {
+    width: 38, // Same as back button to center title
+  },
+  content: {
+    flex: 1,
+    padding: 20,
+  },
   userInfo: {
-    marginTop: 30,
     alignItems: "center",
+    marginBottom: 40,
   },
   avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: "#e0e0e0",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 10,
+    marginBottom: 12,
+    borderWidth: 3,
+    borderColor: "#f0f0f0",
   },
   avatarText: {
-    fontSize: 22,
+    fontSize: 24,
     color: "#000",
     fontWeight: "bold",
   },
   name: {
     color: "#000",
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "600",
+    marginBottom: 4,
+  },
+  address: {
+    color: "#888",
+    fontSize: 14,
+    fontFamily: "monospace",
+  },
+  amountSection: {
+    marginBottom: 30,
+  },
+  sectionLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#000",
+    marginBottom: 12,
   },
   amountInputContainer: {
     flexDirection: "row",
-    alignItems: "flex-end",
-    justifyContent: "center",
-    marginTop: 40,
-    marginHorizontal: 50,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
-    paddingVertical: 10,
+    alignItems: "center",
+    backgroundColor: "#f8f9fa",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderWidth: 2,
+    borderColor: "#e9ecef",
   },
   dollar: {
-    fontSize: 32,
+    fontSize: 28,
     color: "#000",
-    marginRight: 5,
-    paddingBottom: 5,
-    fontWeight: "bold",
+    marginRight: 8,
+    fontWeight: "600",
   },
   amountInput: {
-    fontSize: 48,
+    flex: 1,
+    fontSize: 28,
     color: "#000",
-    textAlign: "center",
-    fontWeight: "bold",
-    paddingVertical: 0,
+    textAlign: "left",
+    fontWeight: "600",
+    paddingVertical: 8,
   },
-  messageBox: {
-    backgroundColor: "#f0f0f0",
-    borderRadius: 15,
-    padding: 15,
-    marginTop: 30,
-    marginHorizontal: 20,
-    alignSelf: "stretch",
-  },
-  messageText: {
-    color: "#555",
+  currency: {
     fontSize: 16,
-    textAlign: "center",
+    color: "#666",
+    fontWeight: "600",
+    backgroundColor: "#e9ecef",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  messageSection: {
+    marginBottom: 20,
+  },
+  messageInput: {
+    backgroundColor: "#f8f9fa",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 2,
+    borderColor: "#e9ecef",
+    fontSize: 16,
+    color: "#000",
+    minHeight: 80,
+    textAlignVertical: "top",
+  },
+  errorContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff5f5",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: "#ff4444",
+  },
+  errorMessage: {
+    color: "#ff4444",
+    fontSize: 14,
+    marginLeft: 8,
+    flex: 1,
+  },
+  infoContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f0f8f0",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginBottom: 20,
+    borderLeftWidth: 4,
+    borderLeftColor: "#34C759",
+  },
+  infoText: {
+    color: "#34C759",
+    fontSize: 14,
+    marginLeft: 8,
+    flex: 1,
+    fontWeight: "500",
+  },
+  buttonContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
   payButton: {
-    backgroundColor: "#34C759",
-    borderRadius: 15,
-    paddingVertical: 15,
+    borderRadius: 12,
+    paddingVertical: 16,
     alignItems: "center",
-    marginTop: "auto",
-    marginBottom: 20,
-    marginHorizontal: 20,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 3,
   },
@@ -180,15 +324,9 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
   },
-  errorMessage: {
-    color: "red",
-    fontSize: 14,
-    textAlign: "center",
-    marginBottom: 15,
-    marginHorizontal: 20,
-  },
-  backButton: {
-    padding: 10,
-    marginTop: 20,
+  loadingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
 });

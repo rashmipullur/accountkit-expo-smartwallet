@@ -8,7 +8,6 @@ import { UserOperationReceipt, TransactionError, BalanceState } from "@/src/type
 
 export default function TabOneScreen() {
   const user = useUser();
-  // console.log("User info:", user);
 
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -17,7 +16,8 @@ export default function TabOneScreen() {
     eth: "0",
     usdc: "0"
   });
-  
+  // console.log("(main) Balances state:", balances);
+
   const { bottom } = useSafeAreaInsets();
   const { client } = useSmartAccountClient({
     type: "ModularAccountV2",

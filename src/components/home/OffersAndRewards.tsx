@@ -35,7 +35,7 @@ const OffersAndRewards: React.FC = () => {
     },
     {
       id: "4",
-      name: "RuPay Shop",
+      name: "E-commerce",
       icon: "shopping",
       bgColor: "#60bb54",
       onPress: () => console.log("Navigating to RuPay Shop"),

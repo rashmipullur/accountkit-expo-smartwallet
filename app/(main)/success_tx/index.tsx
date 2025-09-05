@@ -1,4 +1,4 @@
-import { AntDesign } from "@expo/vector-icons";
+import { AntDesign, Ionicons } from "@expo/vector-icons";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef } from "react";
 import {
@@ -9,69 +9,193 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Linking,
+  Share,
 } from "react-native";
 
 export default function TransactionSuccessScreen() {
-  const scaleAnim = useRef(new Animated.Value(0)).current; // For icon scale animation
-  const opacityAnim = useRef(new Animated.Value(0)).current; // For text fade-in animation
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
 
-  // Get parameters if passed from PaymentScreen
+  // Get parameters passed from confirmation screen
   const params = useLocalSearchParams();
   const amount = params.amount || "0.00";
-  const recipient = params.recipient || "Lance Whitney"; // Default recipient if not passed
+  const recipient = params.recipient || "Lance Whitney";
+  const transactionHash = params.transactionHash as string;
+  const userOpHash = params.userOpHash as string;
 
   useEffect(() => {
-    // Sequence animations for a smooth effect
+    // Enhanced animation sequence
     Animated.sequence([
       Animated.timing(scaleAnim, {
         toValue: 1,
-        duration: 500, // Scale up in 0.5 seconds
-        easing: Easing.out(Easing.ease), // Smooth deceleration
-        useNativeDriver: true, // Use native driver for performance
+        duration: 600,
+        easing: Easing.elastic(1),
+        useNativeDriver: true,
       }),
-      Animated.timing(opacityAnim, {
-        toValue: 1,
-        duration: 300, // Fade in text in 0.3 seconds
-        delay: 100, // Start fading text slightly after icon scales
-        useNativeDriver: true, // Use native driver for performance
-      }),
-    ]).start(); // Start the animation sequence
-  }, [scaleAnim, opacityAnim]); // Depend on animation values
+      Animated.parallel([
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 400,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start();
+  }, [scaleAnim, opacityAnim, slideAnim]);
 
   const handleGoHome = () => {
-    router.replace("/"); // Navigate back to the main home screen, replacing history
+    router.replace("/");
+  };
+
+  const handleViewOnExplorer = () => {
+    if (transactionHash) {
+      const explorerUrl = `https://basescan.org/tx/${transactionHash}`;
+      Linking.openURL(explorerUrl);
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      const message = `I just sent $${amount} USDC to ${recipient} using crypto! 💰\n\nTransaction: https://basescan.org/tx/${transactionHash}`;
+      
+      await Share.share({
+        message,
+        title: "Payment Sent Successfully!",
+      });
+    } catch (error) {
+      console.log("Share failed:", error);
+    }
+  };
+
+  const formatHash = (hash: string) => {
+    if (!hash) return "";
+    return `${hash.slice(0, 6)}...${hash.slice(-6)}`;
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Hide the default Expo Router header for this screen */}
       <Stack.Screen options={{ headerShown: false }} />
 
       <View style={styles.content}>
-        {/* Animated Checkmark Icon */}
+        {/* Animated Success Icon */}
         <Animated.View
-          style={[styles.iconContainer, { transform: [{ scale: scaleAnim }] }]}
+          style={[
+            styles.iconContainer,
+            { transform: [{ scale: scaleAnim }] }
+          ]}
         >
-          <AntDesign name="checkcircleo" size={100} color="#34C759" />
+          <View style={styles.successCircle}>
+            <AntDesign name="check" size={50} color="#fff" />
+          </View>
         </Animated.View>
 
-        {/* Animated Success Message Title */}
-        <Animated.Text style={[styles.title, { opacity: opacityAnim }]}>
-          Payment Sent Successfully!
-        </Animated.Text>
+        {/* Animated Content */}
+        <Animated.View
+          style={[
+            styles.textContainer,
+            {
+              opacity: opacityAnim,
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}
+        >
+          <Text style={styles.title}>Payment Sent Successfully!</Text>
+          <Text style={styles.subtitle}>
+            You have successfully sent{" "}
+            <Text style={styles.amountText}>${amount} USDC</Text> to{" "}
+            <Text style={styles.recipientText}>{recipient}</Text>.
+          </Text>
+        </Animated.View>
 
-        {/* Animated Transaction Details Subtitle */}
-        <Animated.Text style={[styles.subtitle, { opacity: opacityAnim }]}>
-          You have successfully sent
-          <Text style={styles.amountText}> ${amount}</Text> to{" "}
-          <Text style={styles.recipientText}>{recipient}</Text>.
-        </Animated.Text>
+        {/* Transaction Details Card */}
+        <Animated.View
+          style={[
+            styles.detailsCard,
+            {
+              opacity: opacityAnim,
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}
+        >
+          <Text style={styles.detailsTitle}>Transaction Details</Text>
+          
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Amount:</Text>
+            <Text style={styles.detailValue}>${amount} USDC</Text>
+          </View>
+          
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Recipient:</Text>
+            <Text style={styles.detailValue}>{recipient}</Text>
+          </View>
+          
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Network:</Text>
+            <Text style={styles.detailValue}>Base</Text>
+          </View>
+          
+          {transactionHash && (
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Transaction:</Text>
+              <TouchableOpacity onPress={handleViewOnExplorer}>
+                <Text style={styles.hashLink}>
+                  {formatHash(transactionHash)} ↗
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
-        {/* Go to Home Button */}
-        <TouchableOpacity style={styles.homeButton} onPress={handleGoHome}>
-          <Text style={styles.homeButtonText}>Go to Home</Text>
-        </TouchableOpacity>
+          <View style={styles.statusBadge}>
+            <Ionicons name="checkmark-circle" size={16} color="#34C759" />
+            <Text style={styles.statusText}>Confirmed</Text>
+          </View>
+        </Animated.View>
+
+        {/* Action Buttons */}
+        <Animated.View
+          style={[
+            styles.actionButtons,
+            {
+              opacity: opacityAnim,
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}
+        >
+          <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
+            <Ionicons name="share-outline" size={20} color="#34C759" />
+            <Text style={styles.shareButtonText}>Share</Text>
+          </TouchableOpacity>
+
+          {transactionHash && (
+            <TouchableOpacity style={styles.explorerButton} onPress={handleViewOnExplorer}>
+              <Ionicons name="open-outline" size={20} color="#007AFF" />
+              <Text style={styles.explorerButtonText}>View on Explorer</Text>
+            </TouchableOpacity>
+          )}
+        </Animated.View>
       </View>
+
+      {/* Home Button */}
+      <Animated.View
+        style={[
+          styles.bottomButton,
+          {
+            opacity: opacityAnim,
+            transform: [{ translateY: slideAnim }],
+          },
+        ]}
+      >
+        <TouchableOpacity style={styles.homeButton} onPress={handleGoHome}>
+          <Text style={styles.homeButtonText}>Back to Home</Text>
+        </TouchableOpacity>
+      </Animated.View>
     </SafeAreaView>
   );
 }
@@ -79,55 +203,166 @@ export default function TransactionSuccessScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff", // Light theme background
-    justifyContent: "center", // Center content vertically
-    alignItems: "center", // Center content horizontally
-    padding: 20,
+    backgroundColor: "#f8f9fa",
   },
   content: {
-    flex: 1, // Allow content to take up space and center vertically
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    width: "100%",
-    maxWidth: 400, // Limit width on larger screens for better aesthetics
+    padding: 20,
   },
   iconContainer: {
-    marginBottom: 30, // Space below the icon
+    marginBottom: 30,
+  },
+  successCircle: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: "#34C759",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#34C759",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  textContainer: {
+    alignItems: "center",
+    marginBottom: 30,
   },
   title: {
     fontSize: 28,
     fontWeight: "bold",
     color: "#000",
-    marginBottom: 10,
+    marginBottom: 12,
     textAlign: "center",
   },
   subtitle: {
     fontSize: 16,
-    color: "#555",
-    marginBottom: 40,
+    color: "#666",
     textAlign: "center",
-    paddingHorizontal: 20, // Padding for text readability
+    lineHeight: 24,
+    paddingHorizontal: 20,
   },
   amountText: {
     fontWeight: "bold",
-    color: "#34C759", // Green, consistent with your theme for positive values
+    color: "#34C759",
   },
   recipientText: {
     fontWeight: "bold",
-    color: "#000", // Black for recipient name
+    color: "#000",
+  },
+  detailsCard: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 20,
+    width: "100%",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+    marginBottom: 20,
+  },
+  detailsTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#000",
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  detailRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  detailLabel: {
+    fontSize: 14,
+    color: "#888",
+    fontWeight: "500",
+  },
+  detailValue: {
+    fontSize: 14,
+    color: "#000",
+    fontWeight: "600",
+  },
+  hashLink: {
+    fontSize: 14,
+    color: "#007AFF",
+    fontWeight: "600",
+    fontFamily: "monospace",
+  },
+  statusBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#f0f8f0",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    marginTop: 16,
+  },
+  statusText: {
+    fontSize: 14,
+    color: "#34C759",
+    fontWeight: "600",
+    marginLeft: 4,
+  },
+  actionButtons: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 20,
+  },
+  shareButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f0f8f0",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    borderWidth: 1,
+    borderColor: "#34C759",
+  },
+  shareButtonText: {
+    fontSize: 14,
+    color: "#34C759",
+    fontWeight: "600",
+    marginLeft: 6,
+  },
+  explorerButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f0f4ff",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    borderWidth: 1,
+    borderColor: "#007AFF",
+  },
+  explorerButtonText: {
+    fontSize: 14,
+    color: "#007AFF",
+    fontWeight: "600",
+    marginLeft: 6,
+  },
+  bottomButton: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
   homeButton: {
-    backgroundColor: "#34C759", // Green, consistent with your theme
+    backgroundColor: "#34C759",
     borderRadius: 15,
-    paddingVertical: 15,
-    width: "100%",
+    paddingVertical: 16,
     alignItems: "center",
-    marginTop: 30,
-    shadowColor: "#000", // Subtle shadow for depth
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
   },
   homeButtonText: {
     color: "#fff",
