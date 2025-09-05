@@ -18,11 +18,6 @@ interface BalanceState {
   usdc: string;
 }
 
-interface UserOperationReceipt {
-  transactionHash?: string;
-  [key: string]: any;
-}
-
 export default function PaymentConfirmationScreen() {
   const params = useLocalSearchParams();
   const amount = params.amount as string || "0.00";
@@ -35,12 +30,21 @@ export default function PaymentConfirmationScreen() {
     usdc: "0"
   });
 
+  // console.log("balances:", balances);
   const user = useUser();
   const { client } = useSmartAccountClient({
     type: "ModularAccountV2",
   });
 
+
   const account = client?.account;
+  // console.log("-------------------------------")
+  // console.log("User info:", user);
+  // console.log("User address:", user?.address);
+  // console.log("Smart account info:", account);
+  // console.log("Smart account address:", account?.address);
+  // console.log("-------------------------------")
+
   
   // Base mainnet USDC contract address
   const BASE_USDC = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
@@ -51,104 +55,141 @@ export default function PaymentConfirmationScreen() {
     }
   }, [client, account?.address]);
 
-  const loadBalances = async () => {
-    if (!client || !account?.address) return;
 
-    try {
-      // Get ETH balance
-      const ethBalance = await client.getBalance({ address: account.address });
-      const ethFormatted = formatEther(ethBalance);
+const loadBalances = async () => {
+  if (!client || !account?.address || !user?.address) return;
 
-      // Get USDC balance
-      const usdcBalance = await client.readContract({
-        address: BASE_USDC,
-        abi: parseAbi([
-          'function balanceOf(address owner) view returns (uint256)'
-        ]),
-        functionName: 'balanceOf',
-        args: [account.address]
-      });
+  try {
+    // *** Get ETH balance for both accounts
+    const smartAccountEthBalance = await client.getBalance({ address: account.address });
+    // const eoaEthBalance = await client.getBalance({ address: user.address });
 
-      const usdcFormatted = (Number(usdcBalance) / 1e6).toFixed(2); // USDC has 6 decimals
+    // Get USDC balance for both accounts
+    const smartAccountUsdcBalance = await client.readContract({
+      address: BASE_USDC,
+      abi: parseAbi([
+        'function balanceOf(address owner) view returns (uint256)'
+      ]),
+      functionName: 'balanceOf',
+      args: [account.address]
+    });
 
-      setBalances({
-        eth: parseFloat(ethFormatted).toFixed(6),
-        usdc: usdcFormatted
-      });
+    // const eoaUsdcBalance = await client.readContract({
+    //   address: BASE_USDC,
+    //   abi: parseAbi([
+    //     'function balanceOf(address owner) view returns (uint256)'
+    //   ]),
+    //   functionName: 'balanceOf',
+    //   args: [user.address]
+    // });
 
-    } catch (error) {
-      console.error('Failed to load balances:', error);
-    }
-  };
+    const smartUsdcFormatted = (Number(smartAccountUsdcBalance) / 1e6).toFixed(2);
+    // const eoaUsdcFormatted = (Number(eoaUsdcBalance) / 1e6).toFixed(2);
 
-  const executePayment = async () => {
-    if (!client || !account?.address) {
-      Alert.alert("Error", "Smart account client not ready");
-      return;
-    }
+    // setBalances({
+    //   eth: parseFloat(formatEther(smartAccountEthBalance + eoaEthBalance)).toFixed(6),
+    //   usdc: (parseFloat(smartUsdcFormatted) + parseFloat(eoaUsdcFormatted)).toFixed(2)
+    // });
 
-    // Validate balances
-    // const ethBalance = parseFloat(balances.eth);
-    // const usdcBalance = parseFloat(balances.usdc);
-    // const paymentAmount = parseFloat(amount);
+    setBalances({
+      eth: parseFloat(formatEther(smartAccountEthBalance)).toFixed(5),
+      usdc: parseFloat(smartUsdcFormatted).toFixed(3)
+    });
 
-    // if (ethBalance < 0.001) {
-    //   Alert.alert(
-    //     "Insufficient ETH", 
-    //     `You need Base ETH for gas fees.\n\nCurrent ETH: ${balances.eth}\n\nPlease add ETH to your wallet to continue.`
-    //   );
-    //   return;
-    // }
+  } catch (error) {
+    console.error('Failed to load balances:', error);
+  }
+};
 
-    // if (usdcBalance < paymentAmount) {
-    //   Alert.alert(
-    //     "Insufficient USDC", 
-    //     `Current USDC: ${balances.usdc}\nRequired: ${amount}\n\nPlease add more USDC to your wallet.`
-    //   );
-    //   return;
-    // }
+const executeSmartAccountPayment = async () => {
+  if (!client || !account?.address) {
+    Alert.alert("Error", "Smart account client not ready");
+    return;
+  }
 
-    setIsLoading(true);
+  const paymentAmount = parseFloat(amount);
+  const usdcAmount = BigInt(Math.floor(paymentAmount * 1000000));
 
-    try {
-      // Convert amount to USDC format (6 decimals)
-      // const usdcAmount = BigInt(Math.floor(paymentAmount * 1000000));
+  try {
+    const { hash } = await client.sendUserOperation({
+      uo: {
+        target: BASE_USDC,
+        data: encodeFunctionData({
+          abi: parseAbi([
+            'function transfer(address to, uint256 amount) returns (bool)'
+          ]),
+          functionName: 'transfer',
+          args: [recipientAddress, usdcAmount]
+        }),
+        value: 0n,
+      },
+    });
 
-      // const { hash } = await client.sendUserOperation({
-      //   uo: {
-      //     target: BASE_USDC,
-      //     data: encodeFunctionData({
-      //       abi: parseAbi([
-      //         'function transfer(address to, uint256 amount) returns (bool)'
-      //       ]),
-      //       functionName: 'transfer',
-      //       args: [recipientAddress, usdcAmount]
-      //     }),
-      //     value: 0n,
-      //   },
-      // });
+const transactionHash = await client.waitForUserOperationTransaction({ hash });
+    
+    return {
+      transactionHash: transactionHash || hash,
+      userOpHash: hash
+    };
+  } catch (error) {
+    throw error;
+  }
+};
 
-      // // Wait for confirmation
-      // const receipt: UserOperationReceipt = await client.waitForUserOperationTransaction({ hash });
+const executePayment = async () => {
+  if (!client || !account?.address || !user?.address) {
+    Alert.alert("Error", "Account not ready");
+    return;
+  }
+
+  try {
+    const smartUsdcBalance = await client.readContract({
+      address: BASE_USDC,
+      abi: parseAbi(['function balanceOf(address owner) view returns (uint256)']),
+      functionName: 'balanceOf',
+      args: [account.address]
+    });
+
+    // const eoaUsdcBalance = await client.readContract({
+    //   address: BASE_USDC,
+    //   abi: parseAbi(['function balanceOf(address owner) view returns (uint256)']),
+    //   functionName: 'balanceOf',
+    //   args: [user.address]
+    // });
+
+    const paymentAmount = parseFloat(amount);
+    const smartUsdcFormatted = Number(smartUsdcBalance) / 1e6;
+    // const eoaUsdcFormatted = Number(eoaUsdcBalance) / 1e6;
+
+    if (smartUsdcFormatted >= paymentAmount) {
+      // use smart account
+      setIsLoading(true);
+      const result = await executeSmartAccountPayment();
       
-      // Navigate to success screen with transaction details
       router.replace({
         pathname: "/success_tx",
         params: {
           amount,
           recipient,
-          // transactionHash: receipt?.transactionHash || hash,
-          // userOpHash: hash
+          transactionHash: result?.transactionHash,
+          userOpHash: result?.userOpHash
         }
       });
-
-    } catch (error) {
-      console.error('Payment failed:', error);
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      Alert.alert("Payment Failed", `Transaction could not be completed.\n\nError: ${errorMessage}`);
-      setIsLoading(false);
     }
-  };
+    // else {
+    //   Alert.alert(
+    //     "Insufficient USDC", 
+    //     `Total USDC: ${(smartUsdcFormatted + eoaUsdcFormatted).toFixed(2)}\nRequired: ${amount}\n\nSmart Account: ${smartUsdcFormatted.toFixed(2)}\nEOA: ${eoaUsdcFormatted.toFixed(2)}`
+    //   );
+    // }
+  } catch (error) {
+    console.error('Payment failed:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    Alert.alert("Payment Failed", `Transaction could not be completed.\n\nError: ${errorMessage}`);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleBack = () => {
     router.back();

@@ -1,5 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { useState, useEffect } from "react";
 import {
   Image,
   ImageBackground,
@@ -7,10 +8,18 @@ import {
   Text,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from "react-native";
+import { useUser, useSmartAccountClient } from "@account-kit/react-native";
+import { parseAbi } from "viem";
 import MoreOptions from "./Bottom";
 import OffersAndRewards from "./OffersAndRewards";
 import ProfileIconSection from "./ProfileIconSection";
+
+interface BalanceState {
+  usdc: string;
+  isLoading: boolean;
+}
 
 const dummyPeople = [
   {
@@ -112,7 +121,69 @@ const dummyPeople = [
     bgColor: "#da7b66ff",
   },
 ];
+
 export default function WalletHomePage() {
+  const [balances, setBalances] = useState<BalanceState>({
+    usdc: "0",
+    isLoading: true
+  });
+
+  const user = useUser();
+  const { client } = useSmartAccountClient({
+    type: "ModularAccountV2",
+  });
+
+  const account = client?.account;
+  
+  // Base mainnet USDC contract address
+  const BASE_USDC = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+
+  useEffect(() => {
+    if (client && account?.address) {
+      loadBalances();
+    }
+  }, [client, account?.address]);
+
+  const loadBalances = async () => {
+    if (!client || !account?.address || !user?.address) return;
+
+    try {
+      setBalances(prev => ({ ...prev, isLoading: true }));
+
+
+      // get USDC balance
+      const smartAccountUsdcBalance = await client.readContract({
+        address: BASE_USDC,
+        abi: parseAbi([
+          'function balanceOf(address owner) view returns (uint256)'
+        ]),
+        functionName: 'balanceOf',
+        args: [account.address]
+      });
+
+      const smartUsdcFormatted = (Number(smartAccountUsdcBalance) / 1e6).toFixed(2);
+
+      setBalances({
+        usdc: parseFloat(smartUsdcFormatted).toFixed(2),
+        isLoading: false
+      });
+
+    } catch (error) {
+      console.error('Failed to load balances:', error);
+      setBalances(prev => ({ ...prev, isLoading: false }));
+    }
+  };
+
+  // helper function to format the balance for display
+  const formatBalanceForDisplay = (balance: string) => {
+    const [whole, decimal] = balance.split('.');
+    return {
+      whole: whole || '0',
+      decimal: decimal || '00'
+    };
+  };
+
+  const displayBalance = formatBalanceForDisplay(balances.usdc);
 
   return (
     <View style={styles.container}>
@@ -133,37 +204,34 @@ export default function WalletHomePage() {
           <Text style={styles.profileText}>M</Text>
         </TouchableOpacity>
       </View>
+
       <ImageBackground
         source={require("../../../assets/images/home/homeBg.webp")}
         style={styles.card}
         imageStyle={styles.cardImageBackground}
       >
         <View style={styles.cardContentAbsolute}>
-          {/* <Text style={styles.balanceCurrency}>$</Text> */}
           <Image 
-  source={require("../../../assets/images/token/usdc.png")} 
-  style={styles.usdcIcon} 
-/>
-{/* <Text style={styles.usdcText}>USDC</Text> */}
-
-{/* <View style={styles.currencyContainer}>
-  <Image 
-    source={require("../../../assets/images/token/usdc.png")} 
-    style={styles.smallUsdcIcon} 
-  />
-  <Text style={styles.currencyLabel}>USDC</Text>
-</View> */}
-          <Text style={styles.balanceAmount}>
-            3,753<Text style={styles.balanceDecimal}>.35</Text>
-          </Text>
+            source={require("../../../assets/images/token/usdc.png")} 
+            style={styles.usdcIcon} 
+          />
+          {balances.isLoading ? (
+            <ActivityIndicator color="white" size="large" />
+          ) : (
+            <Text style={styles.balanceAmount}>
+              {displayBalance.whole}
+              <Text style={styles.balanceDecimal}>.{displayBalance.decimal}</Text>
+            </Text>
+          )}
         </View>
         <TouchableOpacity
           style={styles.cardMenuAbsolute}
-        //   onPress={() => router.push("/share_qr")}
+          //   onPress={() => router.push("/share_qr")}
         >
           <MaterialCommunityIcons name="qrcode-scan" size={24} color="white" />
         </TouchableOpacity>
       </ImageBackground>
+
       {/* Updated action grid layout */}
       <View style={styles.actionGrid}>
         <View style={styles.actionItemContainer}>
@@ -179,7 +247,6 @@ export default function WalletHomePage() {
           </TouchableOpacity>
           <Text style={styles.actionText}>Scan and Pay</Text>
         </View>
-
         {/* <View style={styles.actionItemContainer}>
           <TouchableOpacity
             style={styles.actionIconButton}
@@ -212,21 +279,25 @@ export default function WalletHomePage() {
           <Text style={styles.actionText}>Earn{"\n"}rewards</Text>
         </View>
       </View>
+
       {/* people */}
       <ProfileIconSection
         title="People"
         people={dummyPeople}
-        initialVisibleCount={7} // Show only 4 initially
+        initialVisibleCount={7}
       />
-      {/* buisness and merchent */}
+
+      {/* business and merchant */}
       <ProfileIconSection
         title="Businesses"
         people={dummyPeople}
-        initialVisibleCount={7} // Show only 4 initially
+        initialVisibleCount={7}
       />
+
       {/* offers and rewards section */}
       <OffersAndRewards />
-      {/* bottom  */}
+
+      {/* bottom */}
       <MoreOptions />
     </View>
   );
@@ -234,42 +305,31 @@ export default function WalletHomePage() {
 
 const styles = StyleSheet.create({
   currencyContainer: {
-  flexDirection: "column",
-  alignItems: "center",
-  marginRight: 10,
-},
-smallUsdcIcon: {
-  width: 20,
-  height: 20,
-  marginBottom: 2,
-},
-currencyLabel: {
-  fontSize: 12,
-  fontWeight: "600",
-  color: "white",
-},
-
-//   usdcIcon: {
-//   width: 32,
-//   height: 32,
-//   marginRight: 5,
-// },
-usdcIcon: {
-  // width: 28,
-  // height: 28,
-  // marginRight: 8,
-   width: 24,
-  height: 24,
-  marginRight: 6,
-  // tintColor: "white", // This will make the icon white to match your theme
-},
-usdcText: {
-  fontSize: 24,
-  fontWeight: "bold",
-  color: "white",
-  marginRight: 8,
-},
-
+    flexDirection: "column",
+    alignItems: "center",
+    marginRight: 10,
+  },
+  smallUsdcIcon: {
+    width: 20,
+    height: 20,
+    marginBottom: 2,
+  },
+  currencyLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "white",
+  },
+  usdcIcon: {
+    width: 24,
+    height: 24,
+    marginRight: 6,
+  },
+  usdcText: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "white",
+    marginRight: 8,
+  },
   container: {
     flex: 1,
     backgroundColor: "#fff",
@@ -334,7 +394,6 @@ usdcText: {
     top: 15,
     right: 15,
   },
-  // Updated Styles
   actionGrid: {
     flexDirection: "row",
     justifyContent: "space-around",
@@ -346,10 +405,10 @@ usdcText: {
     width: "23%",
   },
   actionIconButton: {
-    backgroundColor: "#5abb5eff", // A darker green for the icons
-    borderRadius: 15, // Make it more of a rounded square
+    backgroundColor: "#5abb5eff",
+    borderRadius: 15,
     padding: 12,
-    marginBottom: 8, // Space between icon and text
+    marginBottom: 8,
   },
   actionText: {
     fontSize: 15,
@@ -368,19 +427,19 @@ usdcText: {
     flexDirection: "row",
     alignItems: "center",
     flex: 1,
-    backgroundColor: "#f0f0f0", // Light gray background
+    backgroundColor: "#f0f0f0",
     borderRadius: 50,
     paddingHorizontal: 15,
     paddingVertical: 12,
     marginRight: 10,
   },
   searchPlaceholder: {
-    color: "#555", // Dark gray text for visibility
+    color: "#555",
     marginLeft: 10,
     fontSize: 16,
   },
   profileIcon: {
-    backgroundColor: "#444", // A dark, neutral color
+    backgroundColor: "#444",
     width: 45,
     height: 45,
     borderRadius: 25,
@@ -388,7 +447,7 @@ usdcText: {
     alignItems: "center",
   },
   profileText: {
-    color: "#fff", // White text for contrast
+    color: "#fff",
     fontSize: 20,
     fontWeight: "bold",
   },

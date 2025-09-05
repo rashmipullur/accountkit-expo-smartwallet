@@ -115,48 +115,49 @@ export default function TransactionSuccessScreen() {
         </Animated.View>
 
         {/* Transaction Details Card */}
-        <Animated.View
-          style={[
-            styles.detailsCard,
-            {
-              opacity: opacityAnim,
-              transform: [{ translateY: slideAnim }],
-            },
-          ]}
-        >
-          <Text style={styles.detailsTitle}>Transaction Details</Text>
-          
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Amount:</Text>
-            <Text style={styles.detailValue}>${amount} USDC</Text>
-          </View>
-          
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Recipient:</Text>
-            <Text style={styles.detailValue}>{recipient}</Text>
-          </View>
-          
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Network:</Text>
-            <Text style={styles.detailValue}>Base</Text>
-          </View>
-          
-          {transactionHash && (
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Transaction:</Text>
-              <TouchableOpacity onPress={handleViewOnExplorer}>
-                <Text style={styles.hashLink}>
-                  {formatHash(transactionHash)} ↗
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
+       <View style={styles.detailsCard}>
+  <Text style={styles.detailsTitle}>Transaction Details</Text>
+  
+  <View style={styles.detailRow}>
+    <Text style={styles.detailLabel}>Amount:</Text>
+    <Text style={styles.detailValue}>${amount} USDC</Text>
+  </View>
+  
+  <View style={styles.detailRow}>
+    <Text style={styles.detailLabel}>Recipient:</Text>
+    <Text style={styles.detailValue}>{recipient}</Text>
+  </View>
+  
+  <View style={styles.detailRow}>
+    <Text style={styles.detailLabel}>Network:</Text>
+    <Text style={styles.detailValue}>Base Mainnet</Text>
+  </View>
+  
+  {transactionHash && (
+    <View style={styles.detailRow}>
+      <Text style={styles.detailLabel}>Transaction Hash:</Text>
+      <TouchableOpacity onPress={handleViewOnExplorer}>
+        <Text style={styles.hashLink}>
+          {formatHash(transactionHash)} ↗
+        </Text>
+      </TouchableOpacity>
+    </View>
+  )}
 
-          <View style={styles.statusBadge}>
-            <Ionicons name="checkmark-circle" size={16} color="#34C759" />
-            <Text style={styles.statusText}>Confirmed</Text>
-          </View>
-        </Animated.View>
+  {userOpHash && userOpHash !== transactionHash && (
+    <View style={styles.detailRow}>
+      <Text style={styles.detailLabel}>User Op Hash:</Text>
+      <Text style={[styles.detailValue, { fontFamily: "monospace", fontSize: 12 }]}>
+        {formatHash(userOpHash)}
+      </Text>
+    </View>
+  )}
+
+  <View style={styles.statusBadge}>
+    <Ionicons name="checkmark-circle" size={16} color="#34C759" />
+    <Text style={styles.statusText}>Confirmed on Base</Text>
+  </View>
+</View>
 
         {/* Action Buttons */}
         <Animated.View

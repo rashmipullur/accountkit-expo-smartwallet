@@ -16,7 +16,6 @@ export default function TabOneScreen() {
     eth: "0",
     usdc: "0"
   });
-  // console.log("(main) Balances state:", balances);
 
   const { bottom } = useSafeAreaInsets();
   const { client } = useSmartAccountClient({
@@ -27,7 +26,7 @@ export default function TabOneScreen() {
   
   // Base Sepolia USDC contract address
 //   const BASE_SEPOLIA_USDC = '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
-  const BASE_SEPOLIA_USDC = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'; //actual usdc address
+  const BASE_USDC = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'; //actual usdc address
 
   if (!user) return null;
 
@@ -47,7 +46,7 @@ export default function TabOneScreen() {
 
       // Get USDC balance
       const usdcBalance = await client.readContract({
-        address: BASE_SEPOLIA_USDC,
+        address: BASE_USDC,
         abi: parseAbi([
           'function balanceOf(address owner) view returns (uint256)'
         ]),
@@ -126,7 +125,7 @@ export default function TabOneScreen() {
     try {
       const { hash } = await client.sendUserOperation({
         uo: {
-          target: BASE_SEPOLIA_USDC,
+          target: BASE_USDC,
           data: encodeFunctionData({
             abi: parseAbi([
               'function transfer(address to, uint256 amount) returns (bool)'
@@ -228,24 +227,6 @@ if (receipt && typeof receipt === 'object' && 'transactionHash' in receipt) {
     }
   };
 
-  const openFaucets = () => {
-    Alert.alert(
-      "Get Test Tokens",
-      "Choose which faucet to open:",
-      [
-        {
-          text: "Base Sepolia ETH",
-          onPress: () => Linking.openURL("https://faucet.quicknode.com/base/sepolia")
-        },
-        {
-          text: "Base Sepolia USDC", 
-          onPress: () => Linking.openURL("https://faucet.circle.com/")
-        },
-        { text: "Cancel", style: "cancel" }
-      ]
-    );
-  };
-
   // Add this debug function to your component to troubleshoot the USDC balance issue
   const debugBalances = async () => {
     if (!client || !account?.address || !user?.address) {
@@ -269,12 +250,13 @@ if (receipt && typeof receipt === 'object' && 'transactionHash' in receipt) {
       console.log("User EOA Address:", userEOAAddress);
       
       // Base Sepolia USDC contract
-      const BASE_SEPOLIA_USDC = '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
+
+      const BASE_USDC = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
       
       // Check USDC balance on both addresses
       try {
         const usdcBalanceSmartAccount = await client.readContract({
-          address: BASE_SEPOLIA_USDC,
+          address: BASE_USDC,
           abi: parseAbi([
             'function balanceOf(address owner) view returns (uint256)'
           ]),
@@ -283,7 +265,7 @@ if (receipt && typeof receipt === 'object' && 'transactionHash' in receipt) {
         });
 
         const usdcBalanceEOA = await client.readContract({
-          address: BASE_SEPOLIA_USDC,
+          address: BASE_USDC,
           abi: parseAbi([
             'function balanceOf(address owner) view returns (uint256)'
           ]),

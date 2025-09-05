@@ -20,11 +20,7 @@ import {
 export default function ProfileScreen() {
   const userName = "Jhone Doe";
   const user = useUser()
-  console.log("-------------------------------")
-  console.log("User info:", user);
-  console.log("User address:", user?.address);
-  console.log("-------------------------------")
-
+// console.log("User data:", user);
   const { logout } = useLogout();
 
   async function logoutHandler() {
